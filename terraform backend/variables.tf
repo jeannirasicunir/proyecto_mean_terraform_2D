@@ -70,7 +70,7 @@ variable "existing_s3_bucket_name" {
 variable "repo_url" {
   description = "Optional Git repository URL to clone backend from, bypassing S3 artifact upload."
   type        = string
-  default     = ""
+  default     = "https://github.com/VeraCastro/backend_code.git"
 }
 
 variable "server_dir_relative" {

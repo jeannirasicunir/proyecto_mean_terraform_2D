@@ -18,7 +18,7 @@ resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
-
+  availability_zone = "us-east-1a"
   tags = merge(var.tags, { Name = "mean-backend-public-subnet" })
 }
 
@@ -88,44 +88,6 @@ data "aws_ami" "ubuntu" {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-}
-
-########################
-# S3 bucket + artifact
-########################
-resource "random_pet" "artifacts" {
-  length = 2
-}
-
-resource "aws_s3_bucket" "artifacts" {
-  count         = var.existing_s3_bucket_name == null ? 1 : 0
-  bucket        = "${var.bucket_prefix}-${random_pet.artifacts.id}"
-  force_destroy = true
-
-  tags = merge(var.tags, { Name = "mean-backend-artifacts" })
-}
-
-# Zip local server folder and upload to S3
-resource "archive_file" "server_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/../server"
-  output_path = "${path.module}/server.zip"
-}
-
-locals {
-  artifact_bucket_name = var.repo_url != "" ? "" : (
-    var.existing_s3_bucket_name != null && var.existing_s3_bucket_name != "NONE"
-    ? var.existing_s3_bucket_name
-    : try(aws_s3_bucket.artifacts[0].bucket, "")
-  )
-}
-
-resource "aws_s3_object" "server_zip" {
-  count  = var.repo_url != "" ? 0 : (local.artifact_bucket_name == "" ? 0 : 1)
-  bucket = local.artifact_bucket_name
-  key    = "server.zip"
-  source = archive_file.server_zip.output_path
-  etag   = archive_file.server_zip.output_md5
 }
 
 ########################

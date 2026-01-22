@@ -16,11 +16,12 @@ mkdir -p /opt/app
 cd /opt/app
 # Fetch code: Git repo (if provided) else S3 artifact
 if [ -n "${repo_url}" ]; then
-		mkdir -p /opt/app-src
-		cd /opt/app-src
-		git clone "${repo_url}" .
-		cd "${server_dir_relative}"
-		npm install
+   # 1. Descargar en temporal y mover solo la carpeta necesaria
+   mkdir -p /temp/repo && cd /temp/repo && git clone ${repo_url} . && cp -r . /opt/app
+
+   # 2. Entrar al directorio final e instalar
+   cd /opt/app
+   npm install
 else
 		# No repo provided: create a minimal Node app that listens on ${app_port}
 		mkdir -p /opt/app-simple

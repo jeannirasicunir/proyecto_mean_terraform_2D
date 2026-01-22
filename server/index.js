@@ -16,7 +16,10 @@ app.use('/', usersRouter)
 app.listen( PORT , ()=>{
     console.log('Servidor corriendo')
 })
-
+//probar funcionamiento
+app.get('/', (req, res) => {
+    res.send('¡Hola! El servidor backend está funcionando correctamente 🚀');
+});
 // http://localhost:5000/users
 app.get('/users', async (req, res) => {
     const users = await User.find();

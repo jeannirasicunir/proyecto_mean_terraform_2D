@@ -57,9 +57,14 @@ JS
 		npm install
 fi
 
-# Persist environment to disable DB usage
-echo "DISABLE_DB=true" >> /etc/environment
-export DISABLE_DB=true
+# Persist environment: use MongoDB if mongodb_public_ip provided, else disable DB
+if [ -n "${mongodb_public_ip}" ]; then
+	echo "MONGO_URI=mongodb://${mongodb_public_ip}:${mongo_port}/nodejs-mongo" >> /etc/environment
+	export MONGO_URI="mongodb://${mongodb_public_ip}:${mongo_port}/nodejs-mongo"
+else
+	echo "DISABLE_DB=true" >> /etc/environment
+	export DISABLE_DB=true
+fi
 
 nohup npm run dev > /var/log/node-server.log 2>&1 &
 

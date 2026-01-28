@@ -78,3 +78,15 @@ variable "server_dir_relative" {
   type        = string
   default     = "server"
 }
+
+variable "mongodb_public_ip" {
+  description = "Public IP of the MongoDB EC2 instance (from terraform mongodb output). When set, the backend will connect to this MongoDB instead of using in-memory storage. Leave null for DISABLE_DB=true."
+  type        = string
+  default     = null
+}
+
+variable "mongo_port" {
+  description = "MongoDB port when using mongodb_public_ip."
+  type        = number
+  default     = 27017
+}

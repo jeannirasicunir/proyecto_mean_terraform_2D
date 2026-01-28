@@ -129,6 +129,7 @@ resource "aws_instance" "frontend" {
   user_data = templatefile("${path.module}/templates/user_data.sh", {
     repo_url               = var.repo_url
     frontend_dir_relative  = var.frontend_dir_relative
+    backend_api_url        = var.backend_api_url != null ? var.backend_api_url : ""
   })
   user_data_replace_on_change = true
 

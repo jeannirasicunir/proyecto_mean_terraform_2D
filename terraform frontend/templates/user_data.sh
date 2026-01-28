@@ -23,6 +23,12 @@ if [ -n "${repo_url}" ]; then
   # Install dependencies (includes @angular/cli in devDependencies)
   npm install > /var/log/angular-dev.log 2>&1 || echo "npm install failed" >> /var/log/angular-dev.log
 
+  # If backend API URL provided, inject it into environment so frontend calls the real backend
+  if [ -n "${backend_api_url}" ]; then
+    sed -i "s|apiUrl:.*|apiUrl: '${backend_api_url}'|" src/environments/environment.ts
+    sed -i "s|apiUrl:.*|apiUrl: '${backend_api_url}'|" src/environments/environment.prod.ts
+  fi
+
   # Create a systemd unit to keep Angular dev server running
   FRONTEND_DIR="/opt/app-src/${frontend_dir_relative}"
   cat > /etc/systemd/system/angular.service <<SYSTEMD

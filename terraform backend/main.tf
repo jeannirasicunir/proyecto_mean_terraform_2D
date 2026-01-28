@@ -182,6 +182,8 @@ resource "aws_instance" "backend" {
     app_port            = var.app_port
     repo_url            = var.repo_url
     server_dir_relative = var.server_dir_relative
+    mongodb_public_ip   = var.mongodb_public_ip != null ? var.mongodb_public_ip : ""
+    mongo_port          = var.mongo_port
   })
   user_data_replace_on_change = true
 

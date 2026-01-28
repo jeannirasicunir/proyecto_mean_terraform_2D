@@ -56,9 +56,9 @@ variable "tags" {
 }
 
 variable "security_group_id" {
-  description = "Existing security group ID to attach to the EC2 instance. If set, a new security group will not be created. Note: The security group must belong to the same VPC as the subnet where the instance is launched."
+  description = "Existing security group ID to attach to the EC2 instance. If set, a new security group will not be created. Note: The security group must belong to the same VPC as the subnet where the instance is launched. Set to null to create a new security group."
   type        = string
-  default     = "sg-08d55d3a2d1420f4d"
+  default     = null
 }
 
 variable "existing_vpc_id" {
@@ -70,5 +70,11 @@ variable "existing_vpc_id" {
 variable "existing_subnet_id" {
   description = "Optional existing subnet ID to launch the EC2 into. If not provided, a new public subnet will be created in the selected VPC."
   type        = string
-  default     = "subnet-012dec819ef71dae0"
+  default     = null
+}
+
+variable "backend_api_url" {
+  description = "Public URL of the backend API (e.g. http://<backend_public_ip>:5000). When set, the frontend will use this URL instead of localhost. Pass the backend output application_url after deploying the backend stack."
+  type        = string
+  default     = null
 }

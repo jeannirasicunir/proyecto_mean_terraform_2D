@@ -9,6 +9,11 @@ output "instance_public_dns" {
 }
 
 output "application_url" {
-  description = "URL to reach the Angular dev server"
-  value       = "http://${aws_instance.frontend.public_ip}:4200"
+  description = "URL to reach the Angular app (via ALB on port 80 when ALB is created, else EC2:4200)"
+  value       = var.security_group_id == null && local.create_subnet ? "http://${aws_lb.frontend[0].dns_name}" : "http://${aws_instance.frontend.public_ip}:4200"
+}
+
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer (when ALB is created)"
+  value       = var.security_group_id == null && local.create_subnet ? aws_lb.frontend[0].dns_name : null
 }

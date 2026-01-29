@@ -25,13 +25,28 @@ resource "aws_vpc" "main" {
   tags = merge(var.tags, { Name = "mean-frontend-vpc" })
 }
 
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
 resource "aws_subnet" "public" {
   count                    = local.create_subnet ? 1 : 0
   vpc_id                   = local.vpc_id
   cidr_block               = var.public_subnet_cidr
+  availability_zone        = local.create_subnet ? data.aws_availability_zones.available.names[0] : null
   map_public_ip_on_launch  = true
 
   tags = merge(var.tags, { Name = "mean-frontend-public-subnet" })
+}
+
+resource "aws_subnet" "public_2" {
+  count                    = local.create_subnet ? 1 : 0
+  vpc_id                   = aws_vpc.main[0].id
+  cidr_block               = var.public_subnet_2_cidr
+  availability_zone        = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch  = true
+
+  tags = merge(var.tags, { Name = "mean-frontend-public-subnet-2" })
 }
 
 # Internet gateway and route table are created only when we create a new VPC
@@ -59,21 +74,65 @@ resource "aws_route_table_association" "public_assoc" {
   route_table_id = aws_route_table.public[0].id
 }
 
+resource "aws_route_table_association" "public_2_assoc" {
+  count          = local.create_vpc && local.create_subnet ? 1 : 0
+  subnet_id      = aws_subnet.public_2[0].id
+  route_table_id = aws_route_table.public[0].id
+}
+
 ########################
 # Security Group
 ########################
+resource "aws_security_group" "alb_sg" {
+  count       = var.security_group_id == null && local.create_subnet ? 1 : 0
+  name        = "mean-frontend-alb-sg"
+  description = "Allow HTTP to ALB"
+  vpc_id      = local.vpc_id
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, { Name = "mean-frontend-alb-sg" })
+}
+
 resource "aws_security_group" "frontend_sg" {
   count       = var.security_group_id == null ? 1 : 0
   name        = "mean-frontend-sg"
   description = "Allow Angular dev server and SSH"
   vpc_id      = local.vpc_id
 
-  ingress {
-    description = "Angular dev server"
-    from_port   = 4200
-    to_port     = 4200
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  dynamic "ingress" {
+    for_each = var.security_group_id == null && local.create_subnet ? [1] : []
+    content {
+      description     = "Angular from ALB"
+      from_port       = 4200
+      to_port         = 4200
+      protocol        = "tcp"
+      security_groups = [aws_security_group.alb_sg[0].id]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.security_group_id == null && !local.create_subnet ? [1] : []
+    content {
+      description = "Angular dev server (direct)"
+      from_port   = 4200
+      to_port     = 4200
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
 
   ingress {
@@ -143,4 +202,56 @@ resource "aws_instance" "frontend" {
       error_message = "No subnet provided. When using an existing VPC (explicitly or inferred via security_group_id), set variable existing_subnet_id to a valid subnet in that VPC."
     }
   }
+}
+
+########################
+# Application Load Balancer (only when creating our own VPC + 2 subnets)
+########################
+resource "aws_lb" "frontend" {
+  count               = var.security_group_id == null && local.create_subnet ? 1 : 0
+  name                = "mean-frontend-alb"
+  internal            = false
+  load_balancer_type  = "application"
+  security_groups     = [aws_security_group.alb_sg[0].id]
+  subnets             = [aws_subnet.public[0].id, aws_subnet.public_2[0].id]
+
+  tags = merge(var.tags, { Name = "mean-frontend-alb" })
+}
+
+resource "aws_lb_target_group" "frontend" {
+  count    = var.security_group_id == null && local.create_subnet ? 1 : 0
+  name     = "mean-frontend-tg"
+  port     = 4200
+  protocol = "HTTP"
+  vpc_id   = local.vpc_id
+
+  health_check {
+    path                = "/"
+    port                = "4200"
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+  }
+
+  tags = merge(var.tags, { Name = "mean-frontend-tg" })
+}
+
+resource "aws_lb_listener" "frontend" {
+  count             = var.security_group_id == null && local.create_subnet ? 1 : 0
+  load_balancer_arn = aws_lb.frontend[0].arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend[0].arn
+  }
+}
+
+resource "aws_lb_target_group_attachment" "frontend" {
+  count            = var.security_group_id == null && local.create_subnet ? 1 : 0
+  target_group_arn = aws_lb_target_group.frontend[0].arn
+  target_id        = aws_instance.frontend.id
+  port             = 4200
 }

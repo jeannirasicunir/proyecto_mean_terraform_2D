@@ -16,6 +16,12 @@ variable "public_subnet_cidr" {
   default     = "10.1.1.0/24"
 }
 
+variable "public_subnet_2_cidr" {
+  description = "CIDR for second public subnet (used by ALB; must be in different AZ)"
+  type        = string
+  default     = "10.1.2.0/24"
+}
+
 variable "instance_type" {
   description = "EC2 instance type for frontend"
   type        = string

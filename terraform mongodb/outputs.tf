@@ -8,6 +8,11 @@ output "mongodb_public_ip" {
   value       = aws_instance.mongodb.public_ip
 }
 
+output "mongodb_private_ip" {
+  description = "Private IP of the MongoDB EC2 instance"
+  value       = aws_instance.mongodb.private_ip
+}
+
 output "mongodb_public_dns" {
   description = "Public DNS of the MongoDB EC2 instance"
   value       = aws_instance.mongodb.public_dns

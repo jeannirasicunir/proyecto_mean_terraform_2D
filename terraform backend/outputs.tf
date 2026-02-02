@@ -3,6 +3,11 @@ output "instance_public_ip" {
   value       = aws_instance.backend.public_ip
 }
 
+output "instance_private_ip" {
+  description = "Private IP of backend EC2"
+  value       = aws_instance.backend.private_ip
+}
+
 output "instance_public_dns" {
   description = "Public DNS of backend EC2"
   value       = aws_instance.backend.public_dns

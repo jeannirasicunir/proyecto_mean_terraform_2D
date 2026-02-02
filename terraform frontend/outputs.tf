@@ -3,6 +3,11 @@ output "instance_public_ip" {
   value       = aws_instance.frontend.public_ip
 }
 
+output "instance_private_ip" {
+  description = "Private IP of frontend EC2"
+  value       = aws_instance.frontend.private_ip
+}
+
 output "instance_public_dns" {
   description = "Public DNS of frontend EC2"
   value       = aws_instance.frontend.public_dns
